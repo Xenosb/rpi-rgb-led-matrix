@@ -31,11 +31,13 @@ static int usage(const char *progname) {
 }
 
 static bool parseColor(Color *c, const char *str) {
-  return sscanf(str, "%hhu,%hhu,%hhu", &c->r, &c->g, &c->b) == 3;
+  int res = sscanf(str, "%hhu,%hhu,%hhu", &c->r, &c->g, &c->b);
+  //printf("Color: %d %d %d\n", c->r, c->g, c->b);
+  return res == 3;
 }
 
 int main(int argc, char *argv[]) {
-  Color color(255, 255, 0);
+  Color color(150, 255, 0);
   const char *bdf_font_file = NULL;
   int rows = 32;
   int chain = 1;
@@ -79,7 +81,7 @@ int main(int argc, char *argv[]) {
   GPIO io;
   if (!io.Init())
     return 1;
-    
+
   /*
    * Set up the RGBMatrix. It implements a 'Canvas' interface.
    */
@@ -104,15 +106,26 @@ int main(int argc, char *argv[]) {
   char line[1024];
   while (fgets(line, sizeof(line), stdin)) {
     const size_t last = strlen(line);
-    if (last > 0) line[last - 1] = '\0';  // remove newline.
-    bool line_empty = strlen(line) == 0;
+
+
+    // give custom line color
+    char input_color[11], input_line[1024];
+    sscanf(line, "%[^|]|%s", input_color, input_line);
+    parseColor(&color, input_color);
+
+    if (last > 0) input_line[last - 1] = '\0';  // remove newline.
+    bool line_empty = strlen(input_line) == 0;
     if ((y + font.height() > canvas->height()) || line_empty) {
       canvas->Clear();
       y = y_orig;
     }
     if (line_empty)
       continue;
-    rgb_matrix::DrawText(canvas, font, x, y + font.baseline(), color, line);
+
+
+    // Draw on screen
+    //printf("Text: %s\n", input_line);
+    rgb_matrix::DrawText(canvas, font, x, y + font.baseline(), color, input_line);
     y += font.height();
   }
 
